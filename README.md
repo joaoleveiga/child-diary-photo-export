@@ -1,57 +1,72 @@
 # child-diary-photo-export
 
-Tool to export photos from the child diary app.
+Export media from ChildDiary to local files.
 
-We are using Python 3.14 and [uv](https://docs.astral.sh/uv/) as the Python dependency management tool. All the currently required dependencies are in the `pyproject.toml` file.
+The script logs in with your account credentials from `.env`, fetches paginated media from the ChildDiary API, and downloads files into `media/` with retry support.
 
-To set up the project:
-- If you haven't already, install uv by following: `https://docs.astral.sh/uv/getting-started/installation/`
-- After that, create and sync the virtual environment with `uv sync --all-extras`
-- Configure PyCharm to format docstrings with `numpy` style.
+## Requirements
 
-## Guidelines
+- Python `3.14`
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-To make things easier, we're also using Python's [ruff](https://github.com/astral-sh/ruff) tool to deal with code formatting, as the code linter, and to sort imports.
+## Quick Start
 
-[mypy](http://mypy-lang.org/) is used for type hinting.
-
-You can run `make mypy` for example to for type checking, or `make ruff` to run the linter and format the code for you.
-
-When developing code for this repository, please be sure you install the [pre-commit hooks](https://pre-commit.com/#install):
+1. Sync the project environment:
 
 ```bash
-cd path/to/repo
+uv sync --all-extras
+```
+
+2. Create your local environment file:
+
+```bash
+cp .env.example .env
+```
+
+3. Fill `.env` with your ChildDiary credentials:
+
+```dotenv
+CHILD_DIARY_USERNAME=you@example.com
+CHILD_DIARY_PASSWORD=your-password
+```
+
+4. Run the exporter:
+
+```bash
+uv run python script.py
+```
+
+Downloaded files will be written to `media/`.
+
+## How It Works
+
+- Authenticates with `POST https://app.childdiary.net/api/Account/login`
+- Requests media pages from `GET https://app.childdiary.net/api/media?page=<n>`
+- Downloads each item URL concurrently (`ThreadPoolExecutor`)
+- Retries failed file downloads using exponential backoff (`tenacity`)
+
+## Environment Variables
+
+- `CHILD_DIARY_USERNAME`: ChildDiary login email/username
+- `CHILD_DIARY_PASSWORD`: ChildDiary account password
+
+## Development
+
+Useful commands:
+
+```bash
+make sync
+make ruff
+make mypy
+```
+
+Install hooks once per clone:
+
+```bash
 uv run pre-commit install
 ```
 
-Afterwards, whenever you try to commit changes, the pre-commit hooks
-will run and inform you of possible warnings/errors that must be fixed.
+## Security Notes
 
-## Utilities
-
-### Profiling with cProfile and snakeviz
-
-```bash
-# using cProfile
-python -m cProfile -o foo.stats foo.py
-
-sudo pip install snakeviz
-snakeviz foo.pstats
-
-# The visualization is opened in the browser in: http://127.0.0.1:8080
-```
-
-### Profiling with line_profiles
-
-Decorate the functions to profile with `@profile`:
-```python
-@profile
-def slow_function(a, b, c):
-    ...
-```
-
-run the `kernprof` command on the script:
-```bash
-kernprof -l script_to_profile.py
-python -m line_profiler script_to_profile.py.lprof
-```
+- Never commit `.env`.
+- If you previously used copied browser cookies/headers, invalidate that old session.
