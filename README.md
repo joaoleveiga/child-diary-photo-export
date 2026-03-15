@@ -2,12 +2,11 @@
 
 Tool to export photos from the child diary app.
 
-We are using Python 3.10 and [Poetry](https://python-poetry.org/docs/basic-usage/) as the Python dependency management tool. All the currently required dependencies are in the `pyproject.toml` file.
+We are using Python 3.14 and [uv](https://docs.astral.sh/uv/) as the Python dependency management tool. All the currently required dependencies are in the `pyproject.toml` file.
 
 To set up the project:
-- If you haven't already, install Poetry by running: `curl -sSL https://install.python-poetry.org | python3 -`
-- After that, you can create the virtual environment with `poetry install`
-- Add the versioning plugin to Poetry running `poetry self add "poetry-dynamic-versioning[plugin]"`
+- If you haven't already, install uv by following: `https://docs.astral.sh/uv/getting-started/installation/`
+- After that, create and sync the virtual environment with `uv sync --all-extras`
 - Configure PyCharm to format docstrings with `numpy` style.
 
 ## Guidelines
@@ -22,7 +21,7 @@ When developing code for this repository, please be sure you install the [pre-co
 
 ```bash
 cd path/to/repo
-pre-commit install
+uv run pre-commit install
 ```
 
 Afterwards, whenever you try to commit changes, the pre-commit hooks

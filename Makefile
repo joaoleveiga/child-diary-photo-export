@@ -11,8 +11,11 @@ clean_ruff:
 clean: clean_mypy clean_ruff
 
 mypy:
-	poetry run mypy . --ignore-missing-imports --check-untyped-defs
+	uv run mypy . --ignore-missing-imports --check-untyped-defs
 
 ruff:
-	poetry run ruff format .
-	poetry run ruff check . --fix
+	uv run ruff format .
+	uv run ruff check . --fix
+
+sync:
+	uv sync --all-extras
