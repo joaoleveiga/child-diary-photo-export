@@ -365,3 +365,14 @@ pyrightconfig.json
 
 .DS_Store
 /data/headers.json
+
+# Briefcase
+# Build and distribution artifacts
+briefcase/
+*.app
+*.dmg
+*.msi
+*.exe
+*.pkg
+# macOS app bundle contents
+*.app/Contents/

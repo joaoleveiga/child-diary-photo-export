@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from auth import get_credentials
+from .auth import get_credentials
 from tenacity import retry
 from tenacity import stop_after_attempt
 from tenacity import wait_exponential
