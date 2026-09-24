@@ -47,7 +47,7 @@ bundle = "net.childdiary.export"
 version = "1.0.0"
 description = "Export media files from ChildDiary"
 authors = ["Samuel Pedro"]
-url = "https://github.com/yourusername/child-diary-photo-export"
+url = "https://github.com/SamuelNLP/child-diary-photo-export"
 license = "MIT"
 requires_python = ">=3.14"
 supported_platforms = ["macos", "windows"]

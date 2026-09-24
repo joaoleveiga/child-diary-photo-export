@@ -5,11 +5,12 @@ without using the command line.
 """
 
 import os
-import subprocess
 import sys
 import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+
+from .cli import export
 
 # Check if we're running as a PyInstaller bundle
 if getattr(sys, 'frozen', False):
@@ -193,21 +194,8 @@ class ChildDiaryExportGUI:
             messagebox.showerror("Error", "Please select an output directory")
             return
 
-        # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Build command line arguments
-        args = ['python', 'script.py']
-
         compress = self.compress_var.get()
-        if compress:
-            args.extend(['-c', compress])
-
-        args.extend(['-o', output_dir])
-
         start_page = self.start_page_var.get()
-        if start_page > 1:
-            args.extend(['-p', str(start_page)])
 
         # Update UI
         self.running = True
@@ -222,71 +210,54 @@ class ChildDiaryExportGUI:
 
         # Run in background thread
         self.export_thread = threading.Thread(
-            target=self.run_export, args=(args,), daemon=True
+            target=self.run_export,
+            args=(output_dir, compress, start_page),
+            daemon=True,
         )
         self.export_thread.start()
 
-    def run_export(self, args: list[str]) -> None:
-        """Run the export command and capture output.
+    def run_export(
+        self, output_dir: str, compress: str, start_page: int
+    ) -> None:
+        """Run the export directly using the script module.
 
         Parameters
         ----------
-        args : list[str]
-            Command line arguments.
+        output_dir : str
+            Output directory for the export.
+        compress : str
+            Compression type or empty string.
+        start_page : int
+            Starting page number.
         """
         try:
-            # Use subprocess to run the script
-            # In a PyInstaller bundle, we need to use sys.executable
-            if getattr(sys, 'frozen', False):
-                # Running as PyInstaller bundle
-                python_executable = sys.executable
-                script_path = os.path.join(
-                    os.path.dirname(sys.executable), 'script.py'
-                )
-                # Reconstruct args with the bundled Python
-                bundle_args = [python_executable, script_path]
-                for arg in args[1:]:
-                    if arg not in ('python', 'script.py'):
-                        bundle_args.append(arg)
-                cmd = bundle_args
-            else:
-                cmd = args
-
-            self.append_output(f"Running: {' '.join(cmd)}")
+            self.append_output("Running export...")
             self.append_output("")
 
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                universal_newlines=True,
+            success = export(
+                output_dir=output_dir,
+                compress=compress if compress else None,
+                start_page=start_page,
+                on_progress=self.append_output,
+                on_prompt=lambda msg: messagebox.askyesno("Confirm", msg),
             )
 
-            # Read output line by line
-            for line in process.stdout:
-                if line.strip():
-                    self.append_output(line.strip())
-
-            return_code = process.wait()
-
-            if return_code == 0:
+            if success:
                 self.append_output("")
-                self.append_output("✓ Export completed successfully!")
+                self.append_output("Export completed successfully!")
                 self.status_var.set("Completed")
-                messagebox.showinfo(
+                self.root.after(0, lambda: messagebox.showinfo(
                     "Success", "Export completed successfully!"
-                )
+                ))
             else:
                 self.append_output("")
-                self.append_output(f"✗ Export failed with code: {return_code}")
+                self.append_output("Export failed")
                 self.status_var.set("Failed")
 
         except Exception as e:
             self.append_output(f"Error: {e}")
             self.append_output("")
-            self.append_output("✗ Export failed with exception")
+            self.append_output("Export failed with exception")
             self.status_var.set("Error")
 
         finally:

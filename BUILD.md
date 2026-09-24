@@ -14,11 +14,13 @@ The project now includes three approaches to make the script accessible to non-t
 
 ```
 child-diary-photo-export/
-├── script.py              # Original CLI script
-├── auth.py                # Authentication module
-├── gui.py                 # NEW: Tkinter GUI wrapper
-├── __main__.py            # NEW: Unified entry point (CLI + GUI)
-├── build.py               # NEW: Build automation script
+├── childdiary_export/     # Python package
+│   ├── __init__.py        # Package init
+│   ├── cli.py             # CLI script (formerly script.py)
+│   ├── auth.py            # Authentication module
+│   ├── gui.py             # Tkinter GUI wrapper
+│   └── __main__.py        # Unified entry point (CLI + GUI)
+├── build_script.py        # Build automation script
 ├── ChildDiaryExport.spec          # NEW: PyInstaller spec (CLI)
 ├── ChildDiaryExport-GUI.spec      # NEW: PyInstaller spec (GUI)
 ├── briefcase.toml         # NEW: Briefcase configuration
@@ -58,7 +60,7 @@ Creates standalone executables that users can double-click.
 python build.py pyinstaller
 
 # Or directly with PyInstaller
-uv run pyinstaller --onefile --name ChildDiaryExport-CLI --console script.py
+uv run pyinstaller --onefile --name ChildDiaryExport-CLI --console -m childdiary_export
 ```
 
 Output: `dist/ChildDiaryExport-CLI` (macOS) or `dist/ChildDiaryExport-CLI.exe` (Windows)
@@ -70,7 +72,7 @@ Output: `dist/ChildDiaryExport-CLI` (macOS) or `dist/ChildDiaryExport-CLI.exe` (
 python build.py pyinstaller-gui
 
 # Or directly with PyInstaller
-uv run pyinstaller --onefile --name ChildDiaryExport --windowed gui.py
+uv run pyinstaller --onefile --name ChildDiaryExport --windowed -m childdiary_export --gui
 ```
 
 Output: `dist/ChildDiaryExport` (macOS) or `dist/ChildDiaryExport.exe` (Windows)
@@ -153,12 +155,12 @@ requires_network = true
 
 ## Option 3: GUI Wrapper (Simplest for Development)
 
-The `gui.py` file provides a simple Tkinter interface that wraps your CLI script.
+The `childdiary_export/gui.py` file provides a simple Tkinter interface for the CLI.
 
 ### Run GUI Directly
 
 ```bash
-uv run python gui.py
+uv run python -m childdiary_export --gui
 ```
 
 Or through the unified entry point:

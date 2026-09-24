@@ -56,10 +56,10 @@ full-clean: clean clean-build
 # =============================================================================
 
 run: sync
-	uv run python script.py
+	uv run python -m childdiary_export
 
 run-gui: sync
-	uv run python gui.py
+	uv run python -m childdiary_export --gui
 
 # =============================================================================
 # Testing
