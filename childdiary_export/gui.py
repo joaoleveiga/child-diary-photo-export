@@ -234,12 +234,26 @@ class ChildDiaryExportGUI:
             self.append_output("Running export...")
             self.append_output("")
 
+            # For GUI mode, we use thread-safe callbacks
+            # Progress updates are queued via root.after()
+            def safe_progress(msg: str) -> None:
+                """Schedule progress update on main thread."""
+                self.root.after(0, lambda: self.append_output(msg))
+            
+            # For prompts, we use a simple approach: auto-confirm for GUI
+            # (In a real app, you might want to pre-check disk space before starting)
+            def gui_prompt(msg: str) -> bool:
+                """Handle prompts in GUI - auto-confirm with warning."""
+                self.root.after(0, lambda: self.append_output(f"WARNING: {msg}"))
+                # Auto-confirm for GUI to avoid blocking
+                return True
+
             success = export(
                 output_dir=output_dir,
                 compress=compress if compress else None,
                 start_page=start_page,
-                on_progress=self.append_output,
-                on_prompt=lambda msg: messagebox.askyesno("Confirm", msg),
+                on_progress=safe_progress,
+                on_prompt=gui_prompt,
             )
 
             if success:
