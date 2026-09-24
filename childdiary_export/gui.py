@@ -37,7 +37,7 @@ class ChildDiaryExportGUI:
         self.root = root
         self.root.title("ChildDiary Photo Export")
         self.root.geometry("500x400")
-        self.root.resizable(False, False)
+        self.root.resizable(True, True)
 
         # Configure styles
         self.configure_styles()
