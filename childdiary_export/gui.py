@@ -5,10 +5,11 @@ without using the command line.
 """
 
 import os
+import shutil
 import sys
 import threading
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from .cli import export
 
@@ -74,6 +75,53 @@ class ChildDiaryExportGUI:
 
         # Running state
         self.running = False
+        
+        # Cached session for background thread
+        self._session = None
+
+    def get_credentials_gui(self) -> tuple[str, str] | None:
+        """Get credentials using GUI dialogs.
+        
+        Returns
+        -------
+        tuple[str, str] | None
+            (username, password) or None if cancelled.
+        """
+        import os
+        import keyring
+        
+        # First check environment variables
+        username = os.getenv("CHILD_DIARY_USERNAME")
+        password = os.getenv("CHILD_DIARY_PASSWORD")
+        
+        if username and password:
+            return username, password
+        
+        # Try keyring
+        service = "app.childdiary.net"
+        try:
+            credential = keyring.get_credential(service, None)
+            if credential and credential.username and credential.password:
+                return credential.username, credential.password
+        except Exception:
+            pass
+        
+        # Prompt user with GUI dialogs
+        username = simpledialog.askstring("Credentials", "ChildDiary username:")
+        if username is None:
+            return None
+        
+        password = simpledialog.askstring("Credentials", "ChildDiary password:", show='*')
+        if password is None:
+            return None
+        
+        # Store in keyring for next time
+        try:
+            keyring.set_password(service, username, password)
+        except Exception:
+            pass
+        
+        return username, password
 
     def configure_styles(self) -> None:
         """Configure custom ttk styles."""
@@ -195,7 +243,6 @@ class ChildDiaryExportGUI:
             return
 
         # Pre-check disk space before starting
-        import shutil
         usage = shutil.disk_usage(output_dir)
         percent_used = (usage.used / usage.total) * 100
         if percent_used >= 90.0:
@@ -205,8 +252,60 @@ class ChildDiaryExportGUI:
             ):
                 return
 
+        # Get credentials in main thread (before starting background thread)
+        self.append_output("Authenticating...")
+        self.root.update()
+        
+        credentials = self.get_credentials_gui()
+        if credentials is None:
+            self.append_output("Authentication cancelled.")
+            return
+        
+        username, password = credentials
+        
+        # Create authenticated session in main thread
+        try:
+            import requests
+            session = requests.Session()
+            session.headers.update(
+                {
+                    "accept": "application/json, text/plain, */*",
+                    "referer": "https://app.childdiary.net/main",
+                    "user-agent": (
+                        "Mozilla/5.0 (X11; Linux x86_64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/139.0.0.0 Safari/537.36"
+                    ),
+                }
+            )
+            
+            login_response = session.post(
+                "https://app.childdiary.net/api/Account/login",
+                json={
+                    "Username": username,
+                    "Password": password,
+                    "RememberMe": True,
+                },
+                timeout=30,
+            )
+            
+            if login_response.status_code != 200:
+                messagebox.showerror(
+                    "Login Failed",
+                    f"Login failed ({login_response.status_code}): {login_response.text}"
+                )
+                return
+            
+            self.append_output("Authentication successful.")
+        except Exception as e:
+            messagebox.showerror("Login Error", f"Failed to authenticate: {e}")
+            return
+
         compress = self.compress_var.get()
         start_page = self.start_page_var.get()
+
+        # Store session for background thread
+        self._session = session
 
         # Update UI
         self.running = True
@@ -264,6 +363,7 @@ class ChildDiaryExportGUI:
                 start_page=start_page,
                 on_progress=safe_progress,
                 on_prompt=gui_prompt,
+                session=self._session,
             )
 
             if success:

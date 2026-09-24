@@ -237,6 +237,7 @@ def export(
     start_page: int = 1,
     on_progress: Callable[[str], None] | None = None,
     on_prompt: Callable[[str], bool] | None = None,
+    session: requests.Session | None = None,
 ) -> bool:
     """Export media from ChildDiary to local files.
 
@@ -252,6 +253,8 @@ def export(
         Callback for progress messages.
     on_prompt : Callable[[str], bool], optional
         Callback for user prompts. Returns True to continue.
+    session : requests.Session, optional
+        Pre-authenticated session. If not provided, one will be created.
 
     Returns
     -------
@@ -265,7 +268,11 @@ def export(
             print(msg)
 
     os.makedirs(output_dir, exist_ok=True)
-    session = create_authenticated_session()
+    
+    # Use provided session or create a new one
+    if session is None:
+        session = create_authenticated_session()
+    
     current_page = start_page
 
     try:
