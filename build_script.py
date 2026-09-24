@@ -14,12 +14,10 @@ Usage:
     python build.py clean          # Clean build artifacts
 """
 
-import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
-
 
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent
@@ -61,34 +59,34 @@ def run_command(cmd: list[str], cwd: Path | None = None) -> bool:
 def clean() -> bool:
     """Clean build artifacts."""
     print("Cleaning build artifacts...")
-    
+
     success = True
-    
+
     # Remove build directory
     if BUILD_DIR.exists():
         print(f"Removing {BUILD_DIR}")
         shutil.rmtree(BUILD_DIR, ignore_errors=True)
-    
+
     # Remove dist directory
     if DIST_DIR.exists():
         print(f"Removing {DIST_DIR}")
         shutil.rmtree(DIST_DIR, ignore_errors=True)
-    
+
     # Remove PyInstaller spec files
     for spec_file in PROJECT_ROOT.glob("*.spec"):
         print(f"Removing {spec_file}")
         spec_file.unlink(missing_ok=True)
-    
+
     # Remove __pycache__ directories
     for pycache in PROJECT_ROOT.rglob("__pycache__"):
         print(f"Removing {pycache}")
         shutil.rmtree(pycache, ignore_errors=True)
-    
+
     # Remove .pyc files
     for pyc in PROJECT_ROOT.rglob("*.pyc"):
         print(f"Removing {pyc}")
         pyc.unlink(missing_ok=True)
-    
+
     print("Clean complete")
     return success
 
@@ -98,27 +96,37 @@ def build_pyinstaller_cli() -> bool:
     print("\n" + "=" * 60)
     print("Building CLI version with PyInstaller")
     print("=" * 60)
-    
+
     # Create output directories
     BUILD_DIR.mkdir(exist_ok=True)
     DIST_DIR.mkdir(exist_ok=True)
-    
+
     # Build with PyInstaller
     cmd = [
-        sys.executable, "-m", "pyinstaller",
+        sys.executable,
+        "-m",
+        "pyinstaller",
         "--onefile",
-        "--name", "ChildDiaryExport-CLI",
+        "--name",
+        "ChildDiaryExport-CLI",
         "--console",  # Show console for CLI
         "--clean",
-        "--distpath", str(DIST_DIR),
-        "--workpath", str(BUILD_DIR),
-        "--add-data", ".env.example:.",
-        "--add-data", "README.md:.",
-        "--hidden-import", "keyring",
-        "--hidden-import", "tenacity",
-        "-m", "childdiary_export.script",
+        "--distpath",
+        str(DIST_DIR),
+        "--workpath",
+        str(BUILD_DIR),
+        "--add-data",
+        ".env.example:.",
+        "--add-data",
+        "README.md:.",
+        "--hidden-import",
+        "keyring",
+        "--hidden-import",
+        "tenacity",
+        "-m",
+        "childdiary_export.script",
     ]
-    
+
     return run_command(cmd, cwd=PROJECT_ROOT)
 
 
@@ -127,37 +135,54 @@ def build_pyinstaller_gui() -> bool:
     print("\n" + "=" * 60)
     print("Building GUI version with PyInstaller")
     print("=" * 60)
-    
+
     # Create output directories
     BUILD_DIR.mkdir(exist_ok=True)
     DIST_DIR.mkdir(exist_ok=True)
-    
+
     # Check for icon files
     icon_files = []
     if (PROJECT_ROOT / "resources" / "icon.ico").exists():
         icon_files.append("--icon=resources/icon.ico")
     if (PROJECT_ROOT / "resources" / "icon.icns").exists():
         icon_files.append("--icon=resources/icon.icns")
-    
+
     # Build with PyInstaller
-    cmd = [
-        sys.executable, "-m", "pyinstaller",
-        "--onefile",
-        "--name", "ChildDiaryExport",
-        "--windowed",  # No console for GUI
-        "--clean",
-        "--distpath", str(DIST_DIR),
-        "--workpath", str(BUILD_DIR),
-        "--add-data", ".env.example:.",
-        "--add-data", "README.md:.",
-        "--hidden-import", "keyring",
-        "--hidden-import", "tenacity",
-        "--hidden-import", "tkinter",
-        "--hidden-import", "tkinter.ttk",
-        "--hidden-import", "tkinter.filedialog",
-        "--hidden-import", "tkinter.messagebox",
-    ] + icon_files + ["-m", "childdiary_export.gui"]
-    
+    cmd = (
+        [
+            sys.executable,
+            "-m",
+            "pyinstaller",
+            "--onefile",
+            "--name",
+            "ChildDiaryExport",
+            "--windowed",  # No console for GUI
+            "--clean",
+            "--distpath",
+            str(DIST_DIR),
+            "--workpath",
+            str(BUILD_DIR),
+            "--add-data",
+            ".env.example:.",
+            "--add-data",
+            "README.md:.",
+            "--hidden-import",
+            "keyring",
+            "--hidden-import",
+            "tenacity",
+            "--hidden-import",
+            "tkinter",
+            "--hidden-import",
+            "tkinter.ttk",
+            "--hidden-import",
+            "tkinter.filedialog",
+            "--hidden-import",
+            "tkinter.messagebox",
+        ]
+        + icon_files
+        + ["-m", "childdiary_export.gui"]
+    )
+
     return run_command(cmd, cwd=PROJECT_ROOT)
 
 
@@ -166,29 +191,29 @@ def build_briefcase() -> bool:
     print("\n" + "=" * 60)
     print("Building with Briefcase")
     print("=" * 60)
-    
+
     # Check if briefcase is installed
     try:
-        import briefcase
+        import briefcase  # noqa: F401
     except ImportError:
         print("Briefcase is not installed. Installing...")
         if not run_command([sys.executable, "-m", "pip", "install", "briefcase"]):
             print("Failed to install briefcase")
             return False
-    
+
     # Briefcase commands
     commands = [
         [sys.executable, "-m", "briefcase", "create"],
         [sys.executable, "-m", "briefcase", "build"],
         [sys.executable, "-m", "briefcase", "run"],
     ]
-    
+
     all_success = True
     for cmd in commands:
         if not run_command(cmd, cwd=PROJECT_ROOT):
             all_success = False
             break
-    
+
     return all_success
 
 
@@ -197,24 +222,24 @@ def build_all() -> bool:
     print("\n" + "=" * 60)
     print("Building with all methods")
     print("=" * 60)
-    
+
     all_success = True
-    
+
     # Clean first
     clean()
-    
+
     # Build CLI with PyInstaller
     if not build_pyinstaller_cli():
         all_success = False
-    
+
     # Build GUI with PyInstaller
     if not build_pyinstaller_gui():
         all_success = False
-    
+
     # Build with Briefcase
     if not build_briefcase():
         all_success = False
-    
+
     return all_success
 
 
@@ -241,9 +266,9 @@ def main() -> None:
     if len(sys.argv) < 2:
         print_usage()
         return
-    
+
     command = sys.argv[1].lower()
-    
+
     if command == "clean":
         success = clean()
         sys.exit(0 if success else 1)

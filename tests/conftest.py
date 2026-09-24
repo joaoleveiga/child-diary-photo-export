@@ -1,13 +1,11 @@
 """Pytest configuration and fixtures for ChildDiary Export tests."""
 
-import os
 import shutil
 import tempfile
+import tkinter as tk
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
-import tkinter as tk
 
 
 @pytest.fixture
@@ -29,7 +27,7 @@ def root_window():
     """Create a Tkinter root window for GUI tests."""
     # Skip if tkinter is not available
     pytest.importorskip("tkinter")
-    
+
     # Create window off-screen to avoid visible flash
     root = tk.Tk()
     root.withdraw()

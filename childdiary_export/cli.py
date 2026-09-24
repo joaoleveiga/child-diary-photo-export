@@ -2,6 +2,7 @@
 
 import argparse
 import concurrent.futures
+import json
 import os
 import shutil
 import tarfile
@@ -9,16 +10,16 @@ import time
 import urllib.request
 import uuid
 import zipfile
-from datetime import datetime
+from collections.abc import Callable
+from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import requests
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from .auth import get_credentials
-from tenacity import retry
-from tenacity import stop_after_attempt
-from tenacity import wait_exponential
 
 
 @retry(
@@ -62,7 +63,8 @@ def parse_media_date(date_str: str) -> datetime.date:
     ]
     for fmt in formats:
         try:
-            return datetime.strptime(date_str, fmt).date()
+            dt = datetime.strptime(date_str, fmt).replace(tzinfo=UTC)
+            return dt.date()
         except ValueError:
             continue
     raise ValueError(f"Unable to parse date: {date_str}")
@@ -137,11 +139,13 @@ def check_disk_usage(
             on_warn(msg)
         else:
             print(msg)
-        
+
         if on_prompt:
             return on_prompt("Disk space running low. Continue? [y/N]: ")
         else:
-            response = input("Disk space running low. Continue? [y/N]: ").strip().lower()
+            response = (
+                input("Disk space running low. Continue? [y/N]: ").strip().lower()
+            )
             return response in ("y", "yes")
     return True
 
@@ -261,6 +265,7 @@ def export(
     bool
         True if export completed successfully, False otherwise.
     """
+
     def progress(msg: str) -> None:
         if on_progress:
             on_progress(msg)
@@ -268,11 +273,11 @@ def export(
             print(msg)
 
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Use provided session or create a new one
     if session is None:
         session = create_authenticated_session()
-    
+
     current_page = start_page
 
     try:
@@ -320,7 +325,7 @@ def export(
 
         return True
 
-    except Exception as e:
+    except (requests.exceptions.RequestException, json.JSONDecodeError, OSError) as e:
         progress(f"Export failed: {e}")
         return False
 
@@ -369,9 +374,11 @@ def main() -> None:
         on_progress=print,
         on_prompt=lambda msg: input(msg).strip().lower() in ("y", "yes"),
     )
-    
+
     if not success:
-        exit(1)
+        import sys
+
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -411,7 +411,7 @@ Example of adding a theme:
 
 ```python
 style = ttk.Style()
-style.theme_use('clam')  # or 'alt', 'default', 'classic'
+style.theme_use("clam")  # or 'alt', 'default', 'classic'
 ```
 
 ---

@@ -9,19 +9,21 @@ import shutil
 import sys
 import threading
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, simpledialog
+from tkinter import filedialog, messagebox, simpledialog, ttk
+
+import requests
 
 from .cli import export
 
 # Check if we're running as a PyInstaller bundle
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # Running as bundle, use the temp folder for output
     APP_PATH = sys._MEIPASS
-    DEFAULT_OUTPUT = os.path.join(os.path.expanduser('~'), 'ChildDiaryExport')
+    DEFAULT_OUTPUT = os.path.join(os.path.expanduser("~"), "ChildDiaryExport")
 else:
     # Running in development
     APP_PATH = os.path.dirname(os.path.abspath(__file__))
-    DEFAULT_OUTPUT = os.path.join(APP_PATH, 'media')
+    DEFAULT_OUTPUT = os.path.join(APP_PATH, "media")
 
 
 class ChildDiaryExportGUI:
@@ -75,61 +77,64 @@ class ChildDiaryExportGUI:
 
         # Running state
         self.running = False
-        
+
         # Cached session for background thread
         self._session = None
 
     def get_credentials_gui(self) -> tuple[str, str] | None:
         """Get credentials using GUI dialogs.
-        
+
         Returns
         -------
         tuple[str, str] | None
             (username, password) or None if cancelled.
         """
         import os
+
         import keyring
-        
+
         # First check environment variables
         username = os.getenv("CHILD_DIARY_USERNAME")
         password = os.getenv("CHILD_DIARY_PASSWORD")
-        
+
         if username and password:
             return username, password
-        
+
         # Try keyring
         service = "app.childdiary.net"
         try:
             credential = keyring.get_credential(service, None)
             if credential and credential.username and credential.password:
                 return credential.username, credential.password
-        except Exception:
+        except keyring.errors.KeyringError:
             pass
-        
+
         # Prompt user with GUI dialogs
         username = simpledialog.askstring("Credentials", "ChildDiary username:")
         if username is None:
             return None
-        
-        password = simpledialog.askstring("Credentials", "ChildDiary password:", show='*')
+
+        password = simpledialog.askstring(
+            "Credentials", "ChildDiary password:", show="*"
+        )
         if password is None:
             return None
-        
+
         # Store in keyring for next time
         try:
             keyring.set_password(service, username, password)
-        except Exception:
+        except keyring.errors.KeyringError:
             pass
-        
+
         return username, password
 
     def configure_styles(self) -> None:
         """Configure custom ttk styles."""
         style = ttk.Style()
-        style.configure('TLabel', font=('Helvetica', 11))
-        style.configure('TButton', font=('Helvetica', 11))
-        style.configure('TEntry', font=('Helvetica', 11))
-        style.configure('TCombobox', font=('Helvetica', 11))
+        style.configure("TLabel", font=("Helvetica", 11))
+        style.configure("TButton", font=("Helvetica", 11))
+        style.configure("TEntry", font=("Helvetica", 11))
+        style.configure("TCombobox", font=("Helvetica", 11))
 
     def create_form(self) -> None:
         """Create the form input fields."""
@@ -155,9 +160,7 @@ class ChildDiaryExportGUI:
         browse_button.pack(side=tk.RIGHT, padx=(5, 0))
 
         # Compression
-        ttk.Label(self.main_frame, text="Compression:").pack(
-            anchor=tk.W, pady=(0, 2)
-        )
+        ttk.Label(self.main_frame, text="Compression:").pack(anchor=tk.W, pady=(0, 2))
         self.compress_var = tk.StringVar(value="zip")
         self.compress_combo = ttk.Combobox(
             self.main_frame,
@@ -174,9 +177,7 @@ class ChildDiaryExportGUI:
         ).pack(anchor=tk.W, pady=(0, 10))
 
         # Start Page
-        ttk.Label(self.main_frame, text="Start Page:").pack(
-            anchor=tk.W, pady=(0, 2)
-        )
+        ttk.Label(self.main_frame, text="Start Page:").pack(anchor=tk.W, pady=(0, 2))
         self.start_page_var = tk.IntVar(value=1)
         self.start_page_spin = ttk.Spinbox(
             self.main_frame,
@@ -196,7 +197,7 @@ class ChildDiaryExportGUI:
             button_frame,
             text="Start Export",
             command=self.start_export,
-            style='Accent.TButton',
+            style="Accent.TButton",
         )
         self.run_button.pack(side=tk.LEFT, padx=(0, 10))
 
@@ -245,27 +246,27 @@ class ChildDiaryExportGUI:
         # Pre-check disk space before starting
         usage = shutil.disk_usage(output_dir)
         percent_used = (usage.used / usage.total) * 100
-        if percent_used >= 90.0:
-            if not messagebox.askyesno(
-                "Low Disk Space",
-                f"Disk usage is at {percent_used:.1f}%. Continue anyway?"
-            ):
-                return
+        if percent_used >= 90.0 and not messagebox.askyesno(
+            "Low Disk Space",
+            f"Disk usage is at {percent_used:.1f}%. Continue anyway?",
+        ):
+            return
 
         # Get credentials in main thread (before starting background thread)
         self.append_output("Authenticating...")
         self.root.update()
-        
+
         credentials = self.get_credentials_gui()
         if credentials is None:
             self.append_output("Authentication cancelled.")
             return
-        
+
         username, password = credentials
-        
+
         # Create authenticated session in main thread
         try:
             import requests
+
             session = requests.Session()
             session.headers.update(
                 {
@@ -278,7 +279,7 @@ class ChildDiaryExportGUI:
                     ),
                 }
             )
-            
+
             login_response = session.post(
                 "https://app.childdiary.net/api/Account/login",
                 json={
@@ -288,16 +289,16 @@ class ChildDiaryExportGUI:
                 },
                 timeout=30,
             )
-            
+
             if login_response.status_code != 200:
                 messagebox.showerror(
                     "Login Failed",
-                    f"Login failed ({login_response.status_code}): {login_response.text}"
+                    f"Login failed ({login_response.status_code}): {login_response.text}",
                 )
                 return
-            
+
             self.append_output("Authentication successful.")
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             messagebox.showerror("Login Error", f"Failed to authenticate: {e}")
             return
 
@@ -326,9 +327,7 @@ class ChildDiaryExportGUI:
         )
         self.export_thread.start()
 
-    def run_export(
-        self, output_dir: str, compress: str, start_page: int
-    ) -> None:
+    def run_export(self, output_dir: str, compress: str, start_page: int) -> None:
         """Run the export directly using the script module.
 
         Parameters
@@ -349,7 +348,7 @@ class ChildDiaryExportGUI:
             def safe_progress(msg: str) -> None:
                 """Schedule progress update on main thread."""
                 self.root.after(0, lambda: self.append_output(msg))
-            
+
             # Disk space is pre-checked before starting, so prompts should not occur
             # This is a fallback that auto-confirms
             def gui_prompt(msg: str) -> bool:
@@ -370,15 +369,18 @@ class ChildDiaryExportGUI:
                 self.append_output("")
                 self.append_output("Export completed successfully!")
                 self.status_var.set("Completed")
-                self.root.after(0, lambda: messagebox.showinfo(
-                    "Success", "Export completed successfully!"
-                ))
+                self.root.after(
+                    0,
+                    lambda: messagebox.showinfo(
+                        "Success", "Export completed successfully!"
+                    ),
+                )
             else:
                 self.append_output("")
                 self.append_output("Export failed")
                 self.status_var.set("Failed")
 
-        except Exception as e:
+        except (requests.exceptions.RequestException, OSError) as e:
             self.append_output(f"Error: {e}")
             self.append_output("")
             self.append_output("Export failed with exception")
@@ -405,10 +407,10 @@ class ChildDiaryExportGUI:
 def main() -> None:
     """Main entry point for the GUI application."""
     root = tk.Tk()
-    app = ChildDiaryExportGUI(root)
+    ChildDiaryExportGUI(root)
 
     # Center window on screen
-    root.eval('tk::PlaceWindow . center')
+    root.eval("tk::PlaceWindow . center")
 
     # Set minimum size
     root.minsize(450, 350)
