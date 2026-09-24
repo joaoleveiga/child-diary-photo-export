@@ -50,7 +50,7 @@ authors = ["Samuel Pedro"]
 url = "https://github.com/SamuelNLP/child-diary-photo-export"
 license = "MIT"
 requires_python = ">=3.14"
-supported_platforms = ["macos", "windows"]
+supported_platforms = ["macos", "windows", "linux"]
 sources = ["childdiary_export"]
 
 [tool.briefcase.app.childdiary_export]
