@@ -9,7 +9,6 @@
         </div>
         <nav>
             <a href="{{ en_link }}" class="lang-link{% if lang == 'en' %} active{% endif %}">English</a>
-            <span class="lang-sep">|</span>
             <a href="{{ pt_link }}" class="lang-link{% if lang == 'pt' %} active{% endif %}">Português</a>
         </nav>
     </div>
@@ -36,9 +35,10 @@
                 <div class="release-body">{{ release.body | first_line | truncate(200) }}</div>
                 <div class="downloads">
                     {% for asset in release.assets %}
-                    <a href="{{ asset.browser_download_url }}" 
-                       class="download-btn {{ asset.platform }}" 
-                       download="{{ asset.name }}">
+                    <a href="{{ asset.browser_download_url }}"
+                       class="download-btn {{ asset.platform }}"
+                       download="{{ asset.name }}"
+                       rel="noreferrer">
                         {{ asset.icon }} {{ asset.label }}
                         <span>({{ asset.size_formatted }})</span>
                     </a>
@@ -72,8 +72,7 @@
 
 <footer>
     <div class="container">
-        <p>{{ translations.open_source }}</p>
-        <p><a href="https://github.com/SamuelNLP/child-diary-photo-export">{{ translations.repo }}</a></p>
+        <p><a href="https://github.com/SamuelNLP/child-diary-photo-export" rel="noreferrer">🐙 {{ translations.repo }}</a> | MIT License | <a href="{{ privacy_link }}">{{ translations.privacy_policy }}</a></p>
     </div>
 </footer>
 {% endblock %}
