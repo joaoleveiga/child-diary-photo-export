@@ -194,6 +194,17 @@ class ChildDiaryExportGUI:
             messagebox.showerror("Error", "Please select an output directory")
             return
 
+        # Pre-check disk space before starting
+        import shutil
+        usage = shutil.disk_usage(output_dir)
+        percent_used = (usage.used / usage.total) * 100
+        if percent_used >= 90.0:
+            if not messagebox.askyesno(
+                "Low Disk Space",
+                f"Disk usage is at {percent_used:.1f}%. Continue anyway?"
+            ):
+                return
+
         compress = self.compress_var.get()
         start_page = self.start_page_var.get()
 
@@ -240,12 +251,11 @@ class ChildDiaryExportGUI:
                 """Schedule progress update on main thread."""
                 self.root.after(0, lambda: self.append_output(msg))
             
-            # For prompts, we use a simple approach: auto-confirm for GUI
-            # (In a real app, you might want to pre-check disk space before starting)
+            # Disk space is pre-checked before starting, so prompts should not occur
+            # This is a fallback that auto-confirms
             def gui_prompt(msg: str) -> bool:
-                """Handle prompts in GUI - auto-confirm with warning."""
+                """Handle prompts in GUI - auto-confirm (disk space pre-checked)."""
                 self.root.after(0, lambda: self.append_output(f"WARNING: {msg}"))
-                # Auto-confirm for GUI to avoid blocking
                 return True
 
             success = export(
