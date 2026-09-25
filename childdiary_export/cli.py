@@ -11,7 +11,7 @@ import urllib.request
 import uuid
 import zipfile
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -44,7 +44,7 @@ def download_image(image_url: str, destination: str) -> None:
     urllib.request.urlretrieve(image_url, destination)
 
 
-def parse_media_date(date_str: str) -> datetime.date:
+def parse_media_date(date_str: str) -> date:
     """Parse date string handling both with and without microseconds.
 
     Parameters
@@ -54,7 +54,7 @@ def parse_media_date(date_str: str) -> datetime.date:
 
     Returns
     -------
-    datetime.date
+    date
         Parsed date.
     """
     formats = [

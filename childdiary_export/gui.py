@@ -10,15 +10,19 @@ import sys
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
+from typing import TYPE_CHECKING, Optional
 
 import requests
 
 from .cli import export
 
+if TYPE_CHECKING:
+    from requests import Session
+
 # Check if we're running as a PyInstaller bundle
 if getattr(sys, "frozen", False):
     # Running as bundle, use the temp folder for output
-    APP_PATH = sys._MEIPASS
+    APP_PATH = getattr(sys, "_MEIPASS", None)
     DEFAULT_OUTPUT = os.path.join(os.path.expanduser("~"), "ChildDiaryExport")
 else:
     # Running in development
@@ -79,7 +83,7 @@ class ChildDiaryExportGUI:
         self.running = False
 
         # Cached session for background thread
-        self._session = None
+        self._session: Optional["Session"] = None
 
     def get_credentials_gui(self) -> tuple[str, str] | None:
         """Get credentials using GUI dialogs.
