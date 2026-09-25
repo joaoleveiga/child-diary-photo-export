@@ -20,7 +20,7 @@ jobs:
           python-version: "3.14"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
         run: |
@@ -58,7 +58,7 @@ jobs:
           python-version: "3.14"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
         run: |
@@ -96,7 +96,7 @@ jobs:
           python-version: "3.14"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
         run: |
@@ -144,7 +144,7 @@ jobs:
         run: find artifacts -type f -ls
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/ChildDiaryExport-*.dmg
